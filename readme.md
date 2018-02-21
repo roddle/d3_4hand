@@ -16,7 +16,9 @@ Check out the equations that are used to get the hands doing things the way they
 
 ## Contributing
 
-Please create your own branch on here if you'd like to contribute more examples.
+1) Fork this project
+2) Create a branch for yourself and have fun with it
+3) Send me a pull request and I'll merge it, your branch will serve as its own example.
 
 ## Versioning
 
