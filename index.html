@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>D3 Clock</title>
+        <script src="http://d3js.org/d3.v3.min.js"></script>
+        <link href="d3clock.css" rel="stylesheet">
+    </head>
+    <body>
+        <script type="text/javascript">
+          var showD3Clock = function() {
+
+            var w = 320             // Width of SVG element
+            var h = 320             // Height of SVG element
+
+            var cx = w / 2          // Center x
+            var cy = h / 2          // Center y
+            var margin = 4
+            var r = w / 2 - margin  // Radius of clock face
+
+            var svg = d3.select("body").append("svg")
+              .attr("class", "clock")
+              .attr("width", w)
+              .attr("height", h)
+
+            makeClockFace()
+
+            // Create hands from dataset
+            // getTimeOfDay returns [[string, float][string, float][string, float]]
+            // [["hour", 1-24],["minute", 0-59],["second", 0-59] ]
+            // this makes the hour, minute and second hands on the clock
+            svg.selectAll("line.hand")
+              .data(getTimeOfDay())
+              .enter()
+              .append("line")
+              .attr("class", function (d) { return d[0] + " hand"})
+              .attr("x1", cx)
+              .attr("y1", function (d) { return cy + handBackLength(d) })
+              .attr("x2", cx)
+              .attr("y2", function (d) { return r - handLength(d)})
+              .attr("transform", rotationTransform)
+
+            // Update hand positions once per second
+            // note: what interval to update the second hand for this clock?
+            // 1080. so if 1000 = 1 second, 1080 * 1000 is the value we want
+            // ...
+            // after implementing the clock, a faster hand has been added
+            // now we can update every 2.7 seconds and see a change
+            setInterval(updateHands, 2700)
+
+            function makeClockFace() {
+              var hourTickLength = Math.round(r * 0.2)
+              var minuteTickLength = Math.round(r * 0.075)
+              for (var i = 0; i < 20; ++i) {
+                var tickLength, tickClass
+                if ((i % 5) == 0) {
+                  tickLength = hourTickLength
+                  tickClass = "hourtick"
+                }
+                else {
+                  tickLength = minuteTickLength
+                  tickClass = "minutetick"
+                }
+                svg.append("line")
+                  .attr("class", tickClass + " face")
+                  .attr("x1", cx)
+                  .attr("y1", margin)
+                  .attr("x2", cx)
+                  .attr("y2", margin + tickLength)
+                  .attr("transform", "rotate(" + i * 18 + "," + cx + "," + cy + ")")
+              }
+            }
+
+            function getTimeOfDay() {
+              var now = new Date()
+              // obtain hours mins and seconds according to how this clock tells time
+              var hr = now.getHours()
+              var min = now.getMinutes()
+              var sec = now.getSeconds()
+              
+              // calculate how many seconds we are into today
+              var secondsToday = hr * 3600 + min * 60 + sec
+              
+              // now we find the custom hour/minute/second for this clock
+              
+              // if this clock counts 4 hours in a day, we need this figure in seconds
+              let quarterDayInSeconds = 21600
+              var customHour = secondsToday / quarterDayInSeconds
+
+              // dividing each hour into 20 minutes, that's 1/80th a day in seconds
+              // we need to use modulus to end up with a figure between 1 and 20
+              let eightiethDayInSeconds = 1080
+              var customMinute = (secondsToday / eightiethDayInSeconds) % 20
+
+              // now we divide each minute into 20 portions as well to find the count for the seconds hand
+              // 24hoursinseconds / (4 * 20 * 20) = 86,400 / 1600 = 54
+              let secondsRate = 54
+              var customSeconds = ( secondsToday / secondsRate ) % 20
+
+              // finally lets add a fourth hand so we can see some movement
+              // it'll count 20 paces around the clock for each "second" here
+              // 86400 / (4*20*20*20) = 86400 / 32000 = 2.7
+              let mellowRate = 2.7
+              var mellowTick = ( secondsToday / mellowRate ) % 20
+
+              console.log("custom h.m.s %d:%d:%d:%d", customHour, customMinute, customSeconds, mellowTick)
+              // and then 
+              return [
+                [ "hour",   customHour ],
+                [ "minute", customMinute ],
+                [ "second", customSeconds ],
+                [ "mellow", mellowTick ]
+              ]
+            }
+
+            function handLength(d) {
+              if (d[0] == "hour")
+                return Math.round(0.45 * r)
+              else
+                return Math.round(0.90 * r)
+            }
+
+            function handBackLength(d) {
+              if (d[0] == "second")
+                return Math.round(0.25 * r)
+              else
+                return Math.round(0.10 * r)
+            }
+
+            // this brings is all together
+            // you the hour hand behving at its own rate
+            // the minute and second hand both go around via digits 1-20
+            function rotationTransform(d) {
+              var angle
+              // what portion of 360 degrees is this hour at on the clockface?
+              // 4 hours for the whole day. 1 hour = 1/4 of 360, or 90 degrees:
+              if (d[0] == "hour")
+                angle = d[1] * 90
+              else
+                // minutes and seconds go 1/20th of 360 per digit. 360/20 = 18
+                angle = d[1] * 18
+              return "rotate(" + angle + "," + cx + "," + cy + ")"
+            }
+
+            function updateHands() {
+              svg.selectAll("line.hand")
+                .data(getTimeOfDay())
+                .transition().ease("bounce")
+                .attr("transform", rotationTransform)
+            }
+          }
+
+          showD3Clock()
+        </script>
+    </body>
+</html>
